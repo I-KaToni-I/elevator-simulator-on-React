@@ -12,24 +12,36 @@ function App() {
   let Buttonfloor = useRef(1);
   let LiftIsMove = useRef(false);
   let UpOrDown = useRef(undefined);
+  let [Sdoors, setSDoors] = useState(false);
+  let doors = useRef(false)
   
   let Music = new Audio(sound)
   let [triger, settriger] = useState(0)
 
-  
-  
+  let OpenDoors = () => {
+    doors.current = true
+    setSDoors(true)
+  }
+  let CloseDoors = () => {
+    doors.current = false
+    setSDoors(false)
+  }
   
   let Move = (timer) =>{
     
     if (CorrectFloor.current < floor.current) {
       floor.current = floor.current-1
-    } else {
+    } else if (CorrectFloor.current > floor.current){
       floor.current = floor.current+1
     }
     if (CorrectFloor.current == floor.current) {
       clearInterval(timer)
       LiftIsMove.current = false 
       Music.pause()
+
+      setTimeout(OpenDoors, 1000);
+      setTimeout(CloseDoors, 10000);
+
       
     }
     localStorage.setItem('floor', floor.current);
@@ -45,6 +57,10 @@ function App() {
   }
 
   let tapOnButton = (num) => {
+    if (doors.current) {
+      return
+    }
+
     settriger()
     Buttonfloor.current = num
 
@@ -68,6 +84,11 @@ function App() {
       <section className='Padik'>
         <div className='elevator'>
           <div className='elevator_leftPart'></div>
+
+          <div className='elevator_centerPart'>
+            <div className={`elevator_leftDoor ${Sdoors ? "elevator_leftDoor_activ" : ''}`}></div>
+            <div className={`elevator_rightDoor ${Sdoors ? "elevator_rightDoor_activ" : ''}`}></div>
+          </div>
 
           <div className='elevator_rightPart'>
             <div className='display'>
@@ -100,8 +121,19 @@ function App() {
             </div>
           </div>
         </div>
-        <div className='outsideElevator'>
 
+        <div className='outsideElevator'>
+          <button onClick={() => tapOnButton(1)} className='elevatorButton'>1</button>
+          <button onClick={() => tapOnButton(2)} className='elevatorButton'>2</button>
+          <button onClick={() => tapOnButton(3)} className='elevatorButton'>3</button>
+          <button onClick={() => tapOnButton(4)} className='elevatorButton'>4</button>
+          <button onClick={() => tapOnButton(5)} className='elevatorButton'>5</button>
+          <button onClick={() => tapOnButton(6)} className='elevatorButton'>6</button>
+          <button onClick={() => tapOnButton(7)} className='elevatorButton'>7</button>
+          <button onClick={() => tapOnButton(8)} className='elevatorButton'>8</button>
+          <button onClick={() => tapOnButton(9)} className='elevatorButton'>9</button>
+          <button onClick={() => tapOnButton(10)} className='elevatorButton'>10</button>
+          <button onClick={() => tapOnButton(11)} className='elevatorButton'>11</button>
         </div>
       </section>
 
