@@ -183,10 +183,16 @@
 
 
 .outsideElevator {
-  height: 1000px;
+  height: 900px;
   width: 500px;
+
+  padding-top: 100px;
 
   background-color: black;
 }
 
-
+.outButton{
+  display: flex;
+  gap: 60px;
+  flex-direction:column-reverse;
+}

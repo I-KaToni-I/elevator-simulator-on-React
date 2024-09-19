@@ -6,18 +6,50 @@ import sound from "./assets/music/elevator-music.mp3"
 
 function App() {
   
-  let floor = useRef(Number(localStorage.getItem('floor')) || 0);
+  let floor = useRef(Number(localStorage.getItem('floor')) || 1);
   let [floorS, setfloorS] = useState(floor.current)
   let CorrectFloor = useRef(0);
-  let Buttonfloor = useRef(1);
   let LiftIsMove = useRef(false);
   let UpOrDown = useRef(undefined);
   let [Sdoors, setSDoors] = useState(false);
   let doors = useRef(false)
+  let tasksList = useRef([]);
+  let [LiftIsMoveS, setLiftIsMoveS] = useState()
+  let WorkTaskE = useRef(false)
+  let InProcess = useRef(false)
+  let ListFloors = useRef({
+    1 : false,
+    2 : false,
+    3 : false,
+    4 : false,
+    5 : false,
+    6 : false,
+    7 : false,
+    8 : false,
+    9 : false,
+    10 : false,
+    11 : false,
+  })
+  let LPlist = useRef([])
+  let LowPriority = useRef({
+    1 : false,
+    2 : false,
+    3 : false,
+    4 : false,
+    5 : false,
+    6 : false,
+    7 : false,
+    8 : false,
+    9 : false,
+    10 : false,
+    11 : false,
+  })
   
+  
+  let timerM
+  let timerTE
   let Music = new Audio(sound)
-  let [triger, settriger] = useState(0)
-
+  
   let OpenDoors = () => {
     doors.current = true
     setSDoors(true)
@@ -26,57 +58,140 @@ function App() {
     doors.current = false
     setSDoors(false)
   }
-  
-  let Move = (timer) =>{
+
+  let activFlors = (list) => {
+    let arr = []
+    for (let el in list) {
+      if (list[el]) {
+        arr.push(Number(el))
+      }
+    };
+    return arr
     
+  }
+
+  let Move = () =>{
+
     if (CorrectFloor.current < floor.current) {
       floor.current = floor.current-1
     } else if (CorrectFloor.current > floor.current){
       floor.current = floor.current+1
     }
+
+    if (activFlors(LowPriority.current).includes(floor.current) && UpOrDown.current == 'Down' && floor.current != CorrectFloor.current) {
+      clearInterval(timerM);
+      LowPriority.current[floor.current] = false
+      if (LPlist.current.indexOf(floor.current) != -1) {
+        LPlist.current.splice(LPlist.current.indexOf(floor.current), 1)
+      }
+      setTimeout(OpenDoors, 1000);
+      setTimeout(CloseDoors, 6000);
+      setTimeout(() => {InProcess.current = false}, 9000);
+
+    }
+
+    if (activFlors(ListFloors.current).includes(floor.current) && floor.current != CorrectFloor.current) {
+      clearInterval(timerM);
+      ListFloors.current[floor.current] = false
+      tasksList.current.splice(tasksList.current.indexOf(floor.current), 1)
+      if (LPlist.current.indexOf(floor.current) != -1) {
+        LPlist.current.splice(LPlist.current.indexOf(floor.current), 1)
+      }
+      setTimeout(OpenDoors, 1000);
+      setTimeout(CloseDoors, 6000);
+      setTimeout(() => {InProcess.current = false}, 9000);
+
+    }
+
     if (CorrectFloor.current == floor.current) {
-      clearInterval(timer)
-      LiftIsMove.current = false 
-      Music.pause()
+      clearInterval(timerM);
+      ListFloors.current[floor.current] = false
+      tasksList.current.shift()
+
+      if (LPlist.current.indexOf(floor.current) != -1) {
+        LPlist.current.splice(LPlist.current.indexOf(floor.current), 1)
+      }
+
 
       setTimeout(OpenDoors, 1000);
-      setTimeout(CloseDoors, 10000);
-
-      
+      setTimeout(CloseDoors, 6000);
+      setTimeout(() => {InProcess.current = false}, 9000);
     }
-    localStorage.setItem('floor', floor.current);
+
+
+
     setfloorS(floor.current)
+    localStorage.setItem('floor', floor.current);
   }
 
-  let liftMove = () => {
-    LiftIsMove.current = true
-    
-    CorrectFloor.current > floor.current ? UpOrDown.current = 'Up' : UpOrDown.current = 'Down' 
 
-    let timerTransfer = setInterval(() => Move(timerTransfer), 1000);
+  let taskExecutor = () => {
+    // console.log(tasksList.current);
+    setLiftIsMoveS(true)
+    WorkTaskE.current = true
+    // console.log(LPlist.current);
+    
+    
+    if (!InProcess.current && tasksList.current.length != 0) {
+      LiftIsMove.current = true
+      InProcess.current = true
+      CorrectFloor.current = tasksList.current[0]
+
+      tasksList.current[0] < floor.current ? UpOrDown.current = "Down" : UpOrDown.current = "Up"
+      timerM = setInterval(() => {Move()}, 1000)
+    }
+
+
+    // console.log(tasksList.current.length == 0);
+
+    if (tasksList.current.length == 0 && LPlist.current.length != 0) {
+      tasksList.current.push(LPlist.current[0])
+      LPlist.current.shift()
+    }
+
+    
+    if (tasksList.current.length == 0 && !InProcess.current) {
+      Music.pause()
+      clearInterval(timerTE)
+      InProcess.current = false
+      WorkTaskE.current = false
+      LiftIsMove.current = false
+      setLiftIsMoveS(false)
+    }
+    
   }
 
   let tapOnButton = (num) => {
-    if (doors.current) {
-      return
-    }
-
-    settriger()
-    Buttonfloor.current = num
-
-    if (!LiftIsMove.current) {
-      CorrectFloor.current = Buttonfloor.current 
-      liftMove()
-      Music.play()
-      
-    } else {
-      
-      if (UpOrDown.current == 'Down' && CorrectFloor.current < Buttonfloor.current) {
-        CorrectFloor.current = Buttonfloor.current
+    if (!(num in tasksList.current)) {
+      if (tasksList.current.length < 9) {
+        ListFloors.current[num] = true
+        tasksList.current.push(num)
       }
+      if (!WorkTaskE.current && !InProcess.current && !LiftIsMove.current) {
+        Music.play()
+        WorkTaskE.current = true
+        timerTE = setInterval(() => taskExecutor(), 1000)
+      }
+    }
+    
+  }
+
+  let tapOnButtonLP = (num) => {
+    if (!(num in tasksList.current)) {
+      LowPriority.current[num] = true
+
+      if (tasksList.current.length == 0) {
+        tapOnButton(num)
+      } else {
+        
+        LPlist.current.push(num)
+      }
+
     }
 
   }
+  
+  
 
 
   return (
@@ -94,9 +209,8 @@ function App() {
             <div className='display'>
               {floorS}
               <div className='pointers'>
-                {triger ? '' : ''}
-                <div className='pointerUp_box'><span className={`pointerUp ${LiftIsMove.current && UpOrDown.current == "Up"? "pointerUp_activ" : ''}`}></span></div>
-                <div className='pointerDown_box'><span className={`pointerDown ${LiftIsMove.current && UpOrDown.current == "Down" ? "pointerDown_activ" : ''}`}></span></div>
+                <div className='pointerUp_box'><span className={`pointerUp ${LiftIsMoveS && UpOrDown.current == "Up"? "pointerUp_activ" : ''}`}></span></div>
+                <div className='pointerDown_box'><span className={`pointerDown ${LiftIsMoveS && UpOrDown.current == "Down" ? "pointerDown_activ" : ''}`}></span></div>
                 
               </div>
             </div>
@@ -123,17 +237,19 @@ function App() {
         </div>
 
         <div className='outsideElevator'>
-          <button onClick={() => tapOnButton(1)} className='elevatorButton'>1</button>
-          <button onClick={() => tapOnButton(2)} className='elevatorButton'>2</button>
-          <button onClick={() => tapOnButton(3)} className='elevatorButton'>3</button>
-          <button onClick={() => tapOnButton(4)} className='elevatorButton'>4</button>
-          <button onClick={() => tapOnButton(5)} className='elevatorButton'>5</button>
-          <button onClick={() => tapOnButton(6)} className='elevatorButton'>6</button>
-          <button onClick={() => tapOnButton(7)} className='elevatorButton'>7</button>
-          <button onClick={() => tapOnButton(8)} className='elevatorButton'>8</button>
-          <button onClick={() => tapOnButton(9)} className='elevatorButton'>9</button>
-          <button onClick={() => tapOnButton(10)} className='elevatorButton'>10</button>
-          <button onClick={() => tapOnButton(11)} className='elevatorButton'>11</button>
+          <div className='outButton'>
+            <button onClick={() => tapOnButtonLP(1)} className='elevatorButton'>1</button>
+            <button onClick={() => tapOnButtonLP(2)} className='elevatorButton'>2</button>
+            <button onClick={() => tapOnButtonLP(3)} className='elevatorButton'>3</button>
+            <button onClick={() => tapOnButtonLP(4)} className='elevatorButton'>4</button>
+            <button onClick={() => tapOnButtonLP(5)} className='elevatorButton'>5</button>
+            <button onClick={() => tapOnButtonLP(6)} className='elevatorButton'>6</button>
+            <button onClick={() => tapOnButtonLP(7)} className='elevatorButton'>7</button>
+            <button onClick={() => tapOnButtonLP(8)} className='elevatorButton'>8</button>
+            <button onClick={() => tapOnButtonLP(9)} className='elevatorButton'>9</button>
+            <button onClick={() => tapOnButtonLP(10)} className='elevatorButton'>10</button>
+            <button onClick={() => tapOnButtonLP(11)} className='elevatorButton'>11</button>
+          </div>
         </div>
       </section>
 
